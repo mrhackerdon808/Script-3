@@ -100,5 +100,4 @@ end)
 -- Reconnect on respawn
 LP.CharacterAdded:Connect(function()
     HRP = getHRP()
-
 end)

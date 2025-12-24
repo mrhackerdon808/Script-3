@@ -1,6 +1,6 @@
 --==============================
--- SIMPLE COORDINATE VIEWER
--- Luna / Delta Safe
+-- COORDINATES VIEWER (FIXED)
+-- Mobile + Simulator Safe
 --==============================
 
 local Players = game:GetService("Players")
@@ -8,83 +8,96 @@ local RunService = game:GetService("RunService")
 
 local LP = Players.LocalPlayer
 
--- get HRP safely
 local function getHRP()
     local char = LP.Character or LP.CharacterAdded:Wait()
-    return char:WaitForChild("HumanoidRootPart", 5)
+    return char:WaitForChild("HumanoidRootPart")
 end
 
 local HRP = getHRP()
 
--- UI Parent (safer than CoreGui)
+-- ScreenGui
 local gui = Instance.new("ScreenGui")
-gui.Name = "CoordUI"
+gui.Name = "CoordsUI"
+gui.ResetOnSpawn = false
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Global
 gui.Parent = LP:WaitForChild("PlayerGui")
 
 -- Frame
-local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 250, 0, 110)
+local frame = Instance.new("Frame")
+frame.Parent = gui
+frame.Size = UDim2.new(0, 260, 0, 130)
 frame.Position = UDim2.new(0.05, 0, 0.35, 0)
-frame.BackgroundColor3 = Color3.fromRGB(25,25,25)
+frame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+frame.BackgroundTransparency = 0.1
 frame.BorderSizePixel = 0
+frame.ZIndex = 100
 
-Instance.new("UICorner", frame).CornerRadius = UDim.new(0,10)
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
 
 -- Title
-local title = Instance.new("TextLabel", frame)
-title.Size = UDim2.new(1,0,0,25)
+local title = Instance.new("TextLabel")
+title.Parent = frame
+title.Size = UDim2.new(1, 0, 0, 28)
 title.BackgroundTransparency = 1
 title.Text = "📍 Coordinates"
-title.TextColor3 = Color3.new(1,1,1)
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
 title.Font = Enum.Font.GothamBold
-title.TextSize = 15
+title.TextSize = 16
+title.ZIndex = 101
 
--- Text
-local text = Instance.new("TextLabel", frame)
-text.Position = UDim2.new(0,10,0,30)
-text.Size = UDim2.new(1,-20,0,45)
-text.BackgroundTransparency = 1
-text.TextWrapped = true
-text.TextXAlignment = Enum.TextXAlignment.Left
-text.TextYAlignment = Enum.TextYAlignment.Top
-text.Font = Enum.Font.Code
-text.TextSize = 14
-text.TextColor3 = Color3.fromRGB(0,255,170)
-text.Text = "Loading..."
+-- Coordinates text
+local coords = Instance.new("TextLabel")
+coords.Parent = frame
+coords.Position = UDim2.new(0, 10, 0, 35)
+coords.Size = UDim2.new(1, -20, 0, 55)
+coords.BackgroundTransparency = 1
+coords.TextWrapped = true
+coords.TextXAlignment = Enum.TextXAlignment.Left
+coords.TextYAlignment = Enum.TextYAlignment.Top
+coords.Font = Enum.Font.Code
+coords.TextSize = 15
+coords.TextColor3 = Color3.fromRGB(0, 255, 180)
+coords.Text = "Waiting..."
+coords.ZIndex = 101
 
--- Button
-local btn = Instance.new("TextButton", frame)
-btn.Position = UDim2.new(0.15,0,1,-30)
-btn.Size = UDim2.new(0.7,0,0,25)
-btn.Text = "Copy"
-btn.Font = Enum.Font.GothamBold
-btn.TextSize = 14
-btn.TextColor3 = Color3.new(1,1,1)
-btn.BackgroundColor3 = Color3.fromRGB(60,130,100)
+-- Copy button
+local copy = Instance.new("TextButton")
+copy.Parent = frame
+copy.Size = UDim2.new(0.7, 0, 0, 26)
+copy.Position = UDim2.new(0.15, 0, 1, -32)
+copy.Text = "Copy Coordinates"
+copy.Font = Enum.Font.GothamBold
+copy.TextSize = 14
+copy.TextColor3 = Color3.fromRGB(255,255,255)
+copy.BackgroundColor3 = Color3.fromRGB(40, 140, 100)
+copy.ZIndex = 101
 
-Instance.new("UICorner", btn).CornerRadius = UDim.new(0,8)
+Instance.new("UICorner", copy).CornerRadius = UDim.new(0, 8)
 
-local last = ""
+local lastText = ""
 
--- Update
-RunService.RenderStepped:Connect(function()
+-- Update loop (more stable)
+RunService.Heartbeat:Connect(function()
     if HRP and HRP.Parent then
         local p = HRP.Position
-        last = string.format("X: %.1f\nY: %.1f\nZ: %.1f", p.X, p.Y, p.Z)
-        text.Text = last
+        lastText = string.format(
+            "X: %.2f\nY: %.2f\nZ: %.2f",
+            p.X, p.Y, p.Z
+        )
+        coords.Text = lastText
     end
 end)
 
 -- Copy
-btn.MouseButton1Click:Connect(function()
+copy.MouseButton1Click:Connect(function()
     if typeof(setclipboard) == "function" then
-        setclipboard(last)
-        btn.Text = "Copied!"
+        setclipboard(lastText)
+        copy.Text = "Copied!"
         task.delay(1, function()
-            btn.Text = "Copy"
+            copy.Text = "Copy Coordinates"
         end)
     else
-        btn.Text = "No Clipboard"
+        copy.Text = "No Clipboard"
     end
 end)
 

@@ -1,103 +1,94 @@
---=====================================
--- COORDINATE VIEWER & COPY TOOL
--- Luna / Delta Executor Compatible
---=====================================
+--==============================
+-- SIMPLE COORDINATE VIEWER
+-- Luna / Delta Safe
+--==============================
 
--- Services
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local UIS = game:GetService("UserInputService")
 
 local LP = Players.LocalPlayer
 
--- Wait for character
+-- get HRP safely
 local function getHRP()
     local char = LP.Character or LP.CharacterAdded:Wait()
-    return char:WaitForChild("HumanoidRootPart")
+    return char:WaitForChild("HumanoidRootPart", 5)
 end
 
 local HRP = getHRP()
 
--- UI
+-- UI Parent (safer than CoreGui)
 local gui = Instance.new("ScreenGui")
-gui.Name = "CoordViewer"
-gui.ResetOnSpawn = false
-gui.Parent = game:GetService("CoreGui")
+gui.Name = "CoordUI"
+gui.Parent = LP:WaitForChild("PlayerGui")
 
+-- Frame
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 260, 0, 140)
-frame.Position = UDim2.new(0.03, 0, 0.3, 0)
-frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+frame.Size = UDim2.new(0, 250, 0, 110)
+frame.Position = UDim2.new(0.05, 0, 0.35, 0)
+frame.BackgroundColor3 = Color3.fromRGB(25,25,25)
 frame.BorderSizePixel = 0
-frame.Active = true
-frame.Draggable = true
 
-local corner = Instance.new("UICorner", frame)
-corner.CornerRadius = UDim.new(0, 12)
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0,10)
 
 -- Title
 local title = Instance.new("TextLabel", frame)
-title.Size = UDim2.new(1, 0, 0, 30)
+title.Size = UDim2.new(1,0,0,25)
 title.BackgroundTransparency = 1
 title.Text = "📍 Coordinates"
 title.TextColor3 = Color3.new(1,1,1)
 title.Font = Enum.Font.GothamBold
-title.TextSize = 16
+title.TextSize = 15
 
--- Coord Label
-local coordLabel = Instance.new("TextLabel", frame)
-coordLabel.Position = UDim2.new(0, 10, 0, 40)
-coordLabel.Size = UDim2.new(1, -20, 0, 50)
-coordLabel.BackgroundTransparency = 1
-coordLabel.TextWrapped = true
-coordLabel.TextXAlignment = Left
-coordLabel.TextYAlignment = Top
-coordLabel.Font = Enum.Font.Code
-coordLabel.TextSize = 14
-coordLabel.TextColor3 = Color3.fromRGB(0, 255, 170)
-coordLabel.Text = "Loading..."
+-- Text
+local text = Instance.new("TextLabel", frame)
+text.Position = UDim2.new(0,10,0,30)
+text.Size = UDim2.new(1,-20,0,45)
+text.BackgroundTransparency = 1
+text.TextWrapped = true
+text.TextXAlignment = Enum.TextXAlignment.Left
+text.TextYAlignment = Enum.TextYAlignment.Top
+text.Font = Enum.Font.Code
+text.TextSize = 14
+text.TextColor3 = Color3.fromRGB(0,255,170)
+text.Text = "Loading..."
 
--- Copy Button
-local copyBtn = Instance.new("TextButton", frame)
-copyBtn.Position = UDim2.new(0.1, 0, 1, -40)
-copyBtn.Size = UDim2.new(0.8, 0, 0, 30)
-copyBtn.Text = "📋 Copy Coordinates"
-copyBtn.Font = Enum.Font.GothamBold
-copyBtn.TextSize = 14
-copyBtn.TextColor3 = Color3.new(1,1,1)
-copyBtn.BackgroundColor3 = Color3.fromRGB(40, 120, 90)
+-- Button
+local btn = Instance.new("TextButton", frame)
+btn.Position = UDim2.new(0.15,0,1,-30)
+btn.Size = UDim2.new(0.7,0,0,25)
+btn.Text = "Copy"
+btn.Font = Enum.Font.GothamBold
+btn.TextSize = 14
+btn.TextColor3 = Color3.new(1,1,1)
+btn.BackgroundColor3 = Color3.fromRGB(60,130,100)
 
-local btnCorner = Instance.new("UICorner", copyBtn)
-btnCorner.CornerRadius = UDim.new(0, 10)
+Instance.new("UICorner", btn).CornerRadius = UDim.new(0,8)
 
--- Update loop
-local lastText = ""
+local last = ""
 
+-- Update
 RunService.RenderStepped:Connect(function()
     if HRP and HRP.Parent then
-        local pos = HRP.Position
-        lastText = string.format(
-            "X: %.2f\nY: %.2f\nZ: %.2f",
-            pos.X, pos.Y, pos.Z
-        )
-        coordLabel.Text = lastText
+        local p = HRP.Position
+        last = string.format("X: %.1f\nY: %.1f\nZ: %.1f", p.X, p.Y, p.Z)
+        text.Text = last
     end
 end)
 
--- Copy to clipboard
-copyBtn.MouseButton1Click:Connect(function()
-    if setclipboard then
-        setclipboard(lastText)
-        copyBtn.Text = "✅ Copied!"
+-- Copy
+btn.MouseButton1Click:Connect(function()
+    if typeof(setclipboard) == "function" then
+        setclipboard(last)
+        btn.Text = "Copied!"
         task.delay(1, function()
-            copyBtn.Text = "📋 Copy Coordinates"
+            btn.Text = "Copy"
         end)
     else
-        copyBtn.Text = "❌ Clipboard Not Supported"
+        btn.Text = "No Clipboard"
     end
 end)
 
--- Reconnect on respawn
+-- Respawn fix
 LP.CharacterAdded:Connect(function()
     HRP = getHRP()
 end)

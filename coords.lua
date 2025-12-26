@@ -25,7 +25,7 @@ btn.Size = UDim2.new(0, 130, 0, 50)
 btn.Position = UDim2.new(0.05, 0, 0.6, 0)
 btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-btn.Text = "➡ TP +2"
+btn.Text = "➡ TP +10"
 btn.TextSize = 18
 btn.Font = Enum.Font.GothamBold
 btn.Active = true
@@ -40,6 +40,6 @@ corner.Parent = btn
 -- Teleport Function
 btn.MouseButton1Click:Connect(function()
 	local hrp = getHRP()
-	local forward = hrp.CFrame.LookVector * 5
+	local forward = hrp.CFrame.LookVector * 10
 	hrp.CFrame = hrp.CFrame + forward
 end)

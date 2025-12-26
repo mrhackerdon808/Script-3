@@ -40,6 +40,6 @@ corner.Parent = btn
 -- Teleport Function
 btn.MouseButton1Click:Connect(function()
 	local hrp = getHRP()
-	local forward = hrp.CFrame.LookVector * 2
+	local forward = hrp.CFrame.LookVector * 1
 	hrp.CFrame = hrp.CFrame + forward
 end)

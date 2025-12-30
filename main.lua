@@ -1,103 +1,145 @@
---=====================================
--- COORDINATE VIEWER & COPY TOOL
--- Luna / Delta Executor Compatible
---=====================================
+--====================================
+-- AVATAR MOD MENU (LOADER VERSION)
+-- Long Legs | Width | Float | Toggle
+-- Delta Safe | Client Side
+--====================================
 
--- Services
+if getgenv().AVATAR_MOD_LOADED then return end
+getgenv().AVATAR_MOD_LOADED = true
+
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local UIS = game:GetService("UserInputService")
-
 local LP = Players.LocalPlayer
 
--- Wait for character
-local function getHRP()
+-- STATE
+local ENABLED = true
+local legScale = 1.5
+local widthScale = 1
+local FLOAT = false
+local floatConn
+
+-- LIMITS
+local MIN = 1
+local MAX = 2.5
+local STEP = 0.1
+
+-- Character
+local function getHumanoid()
     local char = LP.Character or LP.CharacterAdded:Wait()
-    return char:WaitForChild("HumanoidRootPart")
+    local hum = char:WaitForChild("Humanoid")
+    if hum.RigType ~= Enum.HumanoidRigType.R15 then return nil end
+    return hum
 end
 
-local HRP = getHRP()
+-- Apply avatar changes
+local function apply()
+    if not ENABLED then return end
+    local hum = getHumanoid()
+    if not hum then return end
 
--- UI
+    hum.BodyHeightScale.Value = legScale
+    hum.BodyWidthScale.Value  = widthScale
+end
+
+-- Float
+local function startFloat()
+    if floatConn then return end
+    floatConn = RunService.RenderStepped:Connect(function()
+        if not FLOAT then return end
+        local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            hrp.Velocity = Vector3.new(hrp.Velocity.X, 1.5, hrp.Velocity.Z)
+        end
+    end)
+end
+
+local function stopFloat()
+    if floatConn then
+        floatConn:Disconnect()
+        floatConn = nil
+    end
+end
+
+-- Respawn
+LP.CharacterAdded:Connect(function()
+    task.wait(1)
+    apply()
+    if FLOAT then startFloat() end
+end)
+
+--================ GUI =================
+
 local gui = Instance.new("ScreenGui")
-gui.Name = "CoordViewer"
+gui.Name = "AvatarMenu"
 gui.ResetOnSpawn = false
-gui.Parent = game:GetService("CoreGui")
+gui.Parent = LP:WaitForChild("PlayerGui")
 
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 260, 0, 140)
-frame.Position = UDim2.new(0.03, 0, 0.3, 0)
-frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-frame.BorderSizePixel = 0
+frame.Size = UDim2.fromScale(0.35, 0.45)
+frame.Position = UDim2.fromScale(0.05, 0.25)
+frame.BackgroundColor3 = Color3.fromRGB(18,18,18)
 frame.Active = true
 frame.Draggable = true
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0,18)
 
-local corner = Instance.new("UICorner", frame)
-corner.CornerRadius = UDim.new(0, 12)
-
--- Title
 local title = Instance.new("TextLabel", frame)
-title.Size = UDim2.new(1, 0, 0, 30)
+title.Size = UDim2.fromScale(1,0.15)
 title.BackgroundTransparency = 1
-title.Text = "📍 Coordinates"
+title.Text = "AVATAR MOD MENU"
 title.TextColor3 = Color3.new(1,1,1)
 title.Font = Enum.Font.GothamBold
-title.TextSize = 16
+title.TextScaled = true
 
--- Coord Label
-local coordLabel = Instance.new("TextLabel", frame)
-coordLabel.Position = UDim2.new(0, 10, 0, 40)
-coordLabel.Size = UDim2.new(1, -20, 0, 50)
-coordLabel.BackgroundTransparency = 1
-coordLabel.TextWrapped = true
-coordLabel.TextXAlignment = Left
-coordLabel.TextYAlignment = Top
-coordLabel.Font = Enum.Font.Code
-coordLabel.TextSize = 14
-coordLabel.TextColor3 = Color3.fromRGB(0, 255, 170)
-coordLabel.Text = "Loading..."
+local function button(txt, y)
+    local b = Instance.new("TextButton", frame)
+    b.Size = UDim2.fromScale(0.9,0.11)
+    b.Position = UDim2.fromScale(0.05,y)
+    b.Text = txt
+    b.Font = Enum.Font.GothamBold
+    b.TextScaled = true
+    b.TextColor3 = Color3.new(1,1,1)
+    b.BackgroundColor3 = Color3.fromRGB(35,35,35)
+    b.BorderSizePixel = 0
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0,12)
+    return b
+end
 
--- Copy Button
-local copyBtn = Instance.new("TextButton", frame)
-copyBtn.Position = UDim2.new(0.1, 0, 1, -40)
-copyBtn.Size = UDim2.new(0.8, 0, 0, 30)
-copyBtn.Text = "📋 Copy Coordinates"
-copyBtn.Font = Enum.Font.GothamBold
-copyBtn.TextSize = 14
-copyBtn.TextColor3 = Color3.new(1,1,1)
-copyBtn.BackgroundColor3 = Color3.fromRGB(40, 120, 90)
+local toggleBtn = button("🟢 ENABLED", 0.17)
+local legPlus   = button("🦵 Leg +",   0.30)
+local legMinus  = button("🦵 Leg -",   0.42)
+local widthBtn  = button("🧍 Width +", 0.54)
+local floatBtn  = button("🛸 Float OFF",0.66)
 
-local btnCorner = Instance.new("UICorner", copyBtn)
-btnCorner.CornerRadius = UDim.new(0, 10)
-
--- Update loop
-local lastText = ""
-
-RunService.RenderStepped:Connect(function()
-    if HRP and HRP.Parent then
-        local pos = HRP.Position
-        lastText = string.format(
-            "X: %.2f\nY: %.2f\nZ: %.2f",
-            pos.X, pos.Y, pos.Z
-        )
-        coordLabel.Text = lastText
-    end
+-- Buttons
+toggleBtn.MouseButton1Click:Connect(function()
+    ENABLED = not ENABLED
+    toggleBtn.Text = ENABLED and "🟢 ENABLED" or "🔴 DISABLED"
+    if ENABLED then apply() end
 end)
 
--- Copy to clipboard
-copyBtn.MouseButton1Click:Connect(function()
-    if setclipboard then
-        setclipboard(lastText)
-        copyBtn.Text = "✅ Copied!"
-        task.delay(1, function()
-            copyBtn.Text = "📋 Copy Coordinates"
-        end)
-    else
-        copyBtn.Text = "❌ Clipboard Not Supported"
-    end
+legPlus.MouseButton1Click:Connect(function()
+    legScale = math.clamp(legScale + STEP, MIN, MAX)
+    apply()
 end)
 
--- Reconnect on respawn
-LP.CharacterAdded:Connect(function()
-    HRP = getHRP()
+legMinus.MouseButton1Click:Connect(function()
+    legScale = math.clamp(legScale - STEP, MIN, MAX)
+    apply()
 end)
+
+widthBtn.MouseButton1Click:Connect(function()
+    widthScale = math.clamp(widthScale + STEP, 0.6, 2)
+    apply()
+end)
+
+floatBtn.MouseButton1Click:Connect(function()
+    FLOAT = not FLOAT
+    floatBtn.Text = FLOAT and "🛸 Float ON" or "🛸 Float OFF"
+    if FLOAT then startFloat() else stopFloat() end
+end)
+
+-- Init
+task.wait(1)
+apply()
+
+print("✅ Avatar Mod Menu Loaded via Loader")
